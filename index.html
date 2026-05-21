@@ -7,308 +7,518 @@
 
 <body>
 
-    <h2>LEX Analyzer Generator</h2>
+    <h2>contour detection</h2>
     <pre><code>
-%{
-#include <stdio.h>
-%}
+image = cv2.imread("image.jpg")
 
-%%
+if image is None:
+    raise FileNotFoundError("Could not find 'image1.jpg' in the project folder.")
+show_fit_window("original image", image, 2000)
 
-[0-9]+     { printf("Number: %s\n", yytext); }
-[a-zA-Z]+  { printf("Identifier: %s\n", yytext); }
+# converting into grayscale
+image_gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+show_fit_window("Gray image", image_gray, 2000)
 
-[+\-*/=]   { printf("Operator: %s\n", yytext); }
+# converting into binary thresholding
+ret, thresh = cv2.threshold(image_gray, 150, 255, cv2.THRESH_BINARY)
+show_fit_window("Binary Image", thresh, 2000)
 
-[ \t\n]+   ;  // Ignore spaces
+# detecting contours
+contours, hierarchy = cv2.findContours(
+    image=thresh,
+    mode=cv2.RETR_TREE,
+    method=cv2.CHAIN_APPROX_NONE
+)
 
-.          { printf("Unknown: %s\n", yytext); }
-%%
+image_copy = image.copy()
 
-int main() {
-    printf("Enter input: ");
-    yylex();
-    return 0;
-}
+# drawing contours
+cv2.drawContours(
+    image=image_copy,
+    contours=contours,
+    contourIdx=-1,
+    color=(0, 0, 255),
+    thickness=2,
+    lineType=cv2.LINE_AA
+)
 </code></pre>
 
-    <h2>Mathematical Expression using .y file</h2>
+    <h2>Graph cut seg</h2>
     <pre><code>
-%{
-#include <stdio.h>
-#include <stdlib.h>
-%}
+import cv2
+import numpy as np
+from matplotlib import pyplot as plt
+img = cv2.imread(image_path)
 
-%token NUMBER
+    img_rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
 
-%%
+    mask = np.zeros(img.shape[:2], np.uint8)
 
-input:
-      input line
-    | 
-    ;
+    bgd_model = np.zeros((1, 65), np.float64)
+    fgd_model = np.zeros((1, 65), np.float64)
 
-line:
-      '\n'
-    | expr '\n' { printf("Result = %d\n", $1); }
-    ;
+    cv2.grabCut(img_rgb, mask, rect, bgd_model, fgd_model, 5, cv2.GC_INIT_WITH_RECT)
 
-expr:
-      expr '+' expr   { $$ = $1 + $3; }
-    | expr '-' expr   { $$ = $1 - $3; }
-    | expr '*' expr   { $$ = $1 * $3; }
-    | expr '/' expr   { $$ = $1 / $3; }
-    | '(' expr ')'    { $$ = $2; }
-    | NUMBER          { $$ = $1; }
-    ;
+    mask2 = np.where((mask == 2) | (mask == 0), 0, 1).astype('uint8')
 
-%%
-
-int main() {
-    printf("Enter Expression:\n");
-    yyparse();
-    return 0;
-}
-
-int yyerror(char *s) {
-    printf("Error: %s\n", s);
-    return 0;
-}
-
-
-
-Execution command
-
-yacc -d calc.y (this will create two file y.tab.c and y.tab.h)
-(copy paste the code of y.tab.h to calc.l)lex calc.l
-gcc y.tab.c lex.yy.c -o calc
-.\calc.exe
+    img_segmented = img_rgb * mask2[:, :, np.newaxis]
 </code></pre>
 
-    <h2>Identify comments</h2>
+    <h2>mean shift seg</h2>
     <pre><code>
-%{
-#include <stdio.h>
-%}
+import cv2
+import numpy as np
 
-%%
-"//".*              { printf("Single-line Comment: %s\n", yytext); }
+image = cv2.imread("image2.jpg")
 
-"/*"([^*]|\*+[^*/])*\*+"/"   { printf("Multi-line Comment: %s\n", yytext); }
+image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
 
-[^\n]*              ;   // ignore other text
-%%
+segmented_image = cv2.pyrMeanShiftFiltering(image, sp=20, sr=30)
 
-int main() {
-    printf("Enter code:\n");
-    yylex();
-    return 0;
-}
+segmented_image_bgr = cv2.cvtColor(segmented_image, cv2.COLOR_RGB2BGR)
 
+cv2.imshow("Original Image", cv2.cvtColor(image, cv2.COLOR_RGB2BGR))
 
-Execution
-lex comment.l
-gcc lex.yy.c -o comment
-.\comment.exe
+cv2.imshow("Mean Shift Segmentation", segmented_image_bgr)
+
+cv2.waitKey(0)
+cv2.destroyAllWindows()
 </code></pre>
 
 
-    <h2>Count vowels and Cosanants</h2>
+    <h2>Histogram</h2>
     <pre><code>
-%{
-#include <stdio.h>
+import cv2
+import numpy as np
+img = cv2.imread('eye.jpg')
+img_gray = cv2.cvtColor(img,cv2.COLOR_BGR2GRAY)
+hist,bins = np.histogram(img.flatten(),256,[0,256])
+cdf = hist.cumsum()
+cdf_normalized = cdf * hist.max() / cdf.max()
+        plt.plot(cdf_normalised,color = 'r')
+        plt.hist(img.flatten(),256,[0,256],color = 'g')
+        plt.show()
 
-int vowels = 0;
-int consonants = 0;
-%}
+        import cv2
+import matplotlib.pyplot as plt
 
-%%
-[aAeEiIoOuU]     { vowels++; }
+# Load image
+image = cv2.imread("rupee.jpg")
 
-[b-df-hj-np-tv-zB-DF-HJ-NP-TV-Z]   { consonants++; }
+# Convert to grayscale
+image_gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 
-[ \t\n]          ;   // ignore spaces
+# Apply Gaussian Blur
+image_blur = cv2.GaussianBlur(image_gray, (3, 3), 0)
 
-.                ;   // ignore other characters
-%%
+# Sobel Edge Detection
+sobelx = cv2.Sobel(src=image_blur, ddepth=cv2.CV_64F, dx=1, dy=0, ksize=5)
+sobely = cv2.Sobel(src=image_blur, ddepth=cv2.CV_64F, dx=0, dy=1, ksize=5)
+sobelxy = cv2.Sobel(src=image_blur, ddepth=cv2.CV_64F, dx=1, dy=1, ksize=5)
 
-int main() {
-    printf("Enter a string:\n");
-    yylex();
+# Convert results to absolute scale
+sobelx = cv2.convertScaleAbs(sobelx)
+sobely = cv2.convertScaleAbs(sobely)
+sobelxy = cv2.convertScaleAbs(sobelxy)
 
-    printf("Vowels = %d\n", vowels);
-    printf("Consonants = %d\n", consonants);
+# Convert original image to RGB for matplotlib
+image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
 
-    return 0;
-}
+# Plot results
+plt.figure(figsize=(15, 8))
+
+plt.subplot(1, 4, 1)
+plt.imshow(image_rgb)
+plt.title("Original")
+plt.axis("off")
+
+plt.subplot(1, 4, 2)
+plt.imshow(sobelx, cmap="gray")
+plt.title("SOBEL X")
+plt.axis("off")
+
+plt.subplot(1, 4, 3)
+plt.imshow(sobely, cmap="gray")
+plt.title("SOBEL Y")
+plt.axis("off")
+
+plt.subplot(1, 4, 4)
+plt.imshow(sobelxy, cmap="gray")
+plt.title("SOBEL X and Y")
+plt.axis("off")
+
+plt.show()
 </code></pre>
 
-    <h2>Count no. of char,words,spaces and lines</h2>
+    <h2>color detection</h2>
     <pre><code>
-%{
-#include <stdio.h>
+import cv2
+import numpy as np
+import matplotlib.pyplot as plt
 
-int chars = 0;
-int words = 0;
-int spaces = 0;
-int lines = 0;
-%}
+def detect_yellow(image_path):
+    # load the image
+    img = cv2.imread(image_path)
 
-%%
-[ \t]        { spaces++; chars++; }
+    # convert to HSV
+    hsv_img = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
 
-\n           { lines++; chars++; }
+    # define yellow range
+    yellow_lower = np.array([20, 100, 100])
+    yellow_upper = np.array([30, 255, 255])
 
-[a-zA-Z]+    { words++; chars += yyleng; }
+    # create mask to isolate yellow color
+    mask = cv2.inRange(hsv_img, yellow_lower, yellow_upper)
 
-.            { chars++; }
-%%
+    # find contours
+    contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
 
-int main() {
-    printf("Enter text:\n");
-    yylex();
+    output_img = img.copy()
 
-    printf("\nCharacters = %d", chars);
-    printf("\nWords = %d", words);
-    printf("\nSpaces = %d", spaces);
-    printf("\nLines = %d\n", lines);
+    # draw bounding boxes
+    for contour in contours:
+        x, y, w, h = cv2.boundingRect(contour)
+        if cv2.contourArea(contour) > 500:
+            cv2.rectangle(output_img, (x, y), (x + w, y + h), (0, 255, 0), 3)
 
-    return 0;
-}
+    # convert to RGB for display
+    output_img_rgb = cv2.cvtColor(output_img, cv2.COLOR_BGR2RGB)
 
-<h2>Count positive and negative integer and fractions.</h2>
+    # display
+    plt.figure(figsize=(12, 6))
+
+    # original image
+    plt.subplot(1, 2, 1)
+    plt.imshow(cv2.cvtColor(img, cv2.COLOR_BGR2RGB))
+    plt.title("Original Image")
+    plt.axis("off")
+
+    # processed image
+    plt.subplot(1, 2, 2)
+    plt.imshow(output_img_rgb)
+    plt.title("Yellow Color Detection")
+    plt.axis("off")
+
+    plt.show()
+
+    return output_img
+
+
+# run function
+image_path = "flower.jpg"
+output_image = detect_yellow(image_path)
+
 <pre><code>
-%{
-#include <stdio.h>
+<h2>object tracking</h2>
+import cv2, numpy as np
 
-int pos_int = 0, neg_int = 0;
-int fraction = 0;
-%}
+cap = cv2.VideoCapture(0)
+N = 800
 
-%%
-[-]?[0-9]+"."[0-9]+    { fraction++; }
+ret, frame = cap.read()
+x, y, w, h = cv2.selectROI(frame,False)
 
-[-][0-9]+              { neg_int++; }
+roi = frame[y:y+h, x:x+w]
+ref_color = roi.mean(axis=(0,1))
 
-[0-9]+                 { pos_int++; }
+particles = np.tile([x+w/2, y+h/2], (N,1))
+weights = np.ones(N) / N
 
-[ \t\n]                ;   // ignore spaces
+while True:
+    ret, frame = cap.read()
+    if not ret: break
 
-.                      ;   // ignore others
-%%
+    h_img, w_img = frame.shape[:2]
 
-int main() {
-    printf("Enter input:\n");
-    yylex();
+    # Predict
+    particles += np.random.randn(N,2) * 15
 
-    printf("\nPositive Integers = %d", pos_int);
-    printf("\nNegative Integers = %d", neg_int);
-    printf("\nFractions = %d\n", fraction);
+    # Keep particles inside frame
+    particles[:,0] = np.clip(particles[:,0], 0, w_img-1)
+    particles[:,1] = np.clip(particles[:,1], 0, h_img-1)
 
-    return 0;
-}
+    # Measurement (vectorized)
+    coords = particles.astype(int)
+    colors = frame[coords[:,1], coords[:,0]]
+    dist = np.linalg.norm(colors - ref_color, axis=1)
+    weights = 1 / (dist + 1)  
+    weights /= weights.sum()
+
+    #estimate
+    pos = np.average(particles, weights=weights, axis=0).astype(int)
+
+    # Resample
+    idx = np.random.choice(N, N, p=weights)
+    particles = particles[idx]
+    weights.fill(1.0 / N)
+
+    # Draw
+    for p in particles:
+      cv2.circle(frame, tuple(p.astype(int)), 1, (0,255,0), -1)
+    cv2.circle(frame, tuple(pos), 8, (0,0,255), -1)
+
+    cv2.imshow("Particle Filter", frame)
+    if cv2.waitKey(30) & 0xFF == 27 :
+       break
+
+cap.release()
+cv2.destroyAllWindows()
 </code></pre>
-    <h2>wheather a string is c keyword</h2>
+    <h2>hand gesture</h2>
     <pre><code>
-%{
-#include <stdio.h>
-int flag = 0;
-%}
+import cv2
+import mediapipe as mp
+from mediapipe.tasks.python import vision
+from mediapipe.tasks.python.core.base_options import BaseOptions
 
-%%
-"int"|"float"|"char"|"double"|"if"|"else"|"while"|"for"|"return"|"void"|"break"|"continue"|"switch"|"case"|"default"
-    { 
-        printf("It is a C Keyword\n"); 
-        flag = 1;
-    }
+# Load the hand landmark model (download required)
+model_path = "hand_landmarker.task"
 
-[a-zA-Z_][a-zA-Z0-9_]*  
-    { 
-        if(flag == 0)
-            printf("It is NOT a C Keyword\n");
-    }
+# Initialize HandLandmarker
+options = vision.HandLandmarkerOptions(
+    base_options=BaseOptions(model_asset_path=model_path),
+    num_hands=2
+)
+hand_landmarker = vision.HandLandmarker.create_from_options(options)
 
-\n      return 0;
-%%
+# Gesture recognition function
+def recognize_number(hand_landmarks):
+    fingers = []
+    # Landmark shortcuts
+    lm = hand_landmarks
+    # ---- Thumb (special case: compare x instead of y) ----
+    if lm[4].x < lm[3].x:
+        fingers.append(1)
+    else:
+        fingers.append(0)
 
-int main() {
-    printf("Enter a string:\n");
-    yylex();
-    return 0;
-}
+    # ---- Other 4 fingers ----
+    tips = [8, 12, 16, 20]
+    for tip in tips:
+        if lm[tip].y < lm[tip - 2].y:
+            fingers.append(1)
+        else:
+            fingers.append(0) 
+            
+    total_fingers = sum(fingers)
+
+    # ---- Map to numbers ----
+    if fingers == [0,0,0,0,0]:
+        return "0"
+    elif fingers == [0,1,0,0,0]:
+        return "1"
+    elif fingers == [0,1,1,0,0]:
+        return "2"
+    elif fingers == [0,1,1,1,0]:
+        return "3"
+    elif fingers == [0,1,1,1,1]:
+        return "4"
+    elif fingers == [1,1,1,1,1]:
+        return "5"
+    elif fingers == [1,0,0,0,1]:
+        return "6"
+    elif fingers == [1,1,0,0,1]:
+        return "7"
+    elif fingers == [1,1,1,0,1]:
+        return "8"
+    elif fingers == [1,1,1,1,0]:
+        return "9"
+    else:
+        return str(total_fingers)
+
+# Start webcam
+cap = cv2.VideoCapture(0)
+
+while True:
+    ret, frame = cap.read()
+    frame = cv2.flip(frame, 1) # flipping horizontaly
+    if not ret:
+        break
+
+    # Convert frame to RGB
+    rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+
+    # Convert to MediaPipe Image
+    mp_image = mp.Image(image_format=mp.ImageFormat.SRGB, data=rgb_frame)
+
+    # Detect hands
+    result = hand_landmarker.detect(mp_image)
+
+    if result.hand_landmarks:
+        for hand_landmarks in result.hand_landmarks:
+            gesture = recognize_number(hand_landmarks)
+
+            # Draw landmarks manually
+            for lm in hand_landmarks:
+                h, w, _ = frame.shape
+                cx, cy = int(lm.x * w), int(lm.y * h)
+                cv2.circle(frame, (cx, cy), 5, (0, 255, 0), -1)
+
+            # Get position of wrist (landmark 0)
+            h, w, _ = frame.shape
+            x = int(hand_landmarks[0].x * w)
+            y = int(hand_landmarks[0].y * h)
+            
+            cv2.putText(frame, gesture, (x, y - 20), 
+                        cv2.FONT_HERSHEY_SIMPLEX, 1, 
+                        (0, 0, 0), 2)
+
+    cv2.imshow("Hand Gesture Recognition", frame)
+
+    if cv2.waitKey(1) & 0xFF == ord('q'):
+        break
+
+cap.release()
+cv2.destroyAllWindows()
 </code></pre>
 
-    <h2>wheather a string is identifier</h2>
+    <h2>3D object</h2>
     <pre><code>
-%{
-#include <stdio.h>
-%}
+import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
+import numpy as np
 
-%%
-[a-zA-Z_][a-zA-Z0-9_]*  
-    { printf("Valid Identifier\n"); }
+# creating figure size
+fig = plt.figure(figsize=(10, 8))
 
-[0-9][a-zA-Z0-9_]*     
-    { printf("Invalid Identifier\n"); }
+# generating a 3D sine wave
+ax = plt.axes(projection='3d')
 
-.|\n                   
-    { printf("Invalid Identifier\n"); }
-%%
+# creating axes
+axes = [5, 5, 5]
 
-int main() {
-    printf("Enter a string:\n");
-    yylex();
-    return 0;
-}
+# create data
+data = np.ones(axes)
+
+# control transparency
+alpha = 0.9
+
+# Control colour
+# colors = np.empty(axes + [4])
+
+# colors[0] = [1, 0, 0, alpha]  # red
+# colors[1] = [0, 1, 0, alpha]  # green
+# colors[2] = [0, 0, 1, alpha]  # blue
+# colors[3] = [1, 1, 0, alpha]  # yellow
+# colors[4] = [1, 1, 1, alpha]  # grey
+
+# Creating array points using numpy
+x = np.arange(0, 20, 0.1)
+y = np.sin(x)
+z = y * np.sin(x)
+c = x + y
+
+# To create a scatter graph
+ax.scatter(x, y, z, c=c)
+
+# turn off/on axis
+plt.axis('off')
+
+# Voxels example (commented)
+# ax.voxels(data, facecolors=colors, edgecolors='grey')
+
+plt.show()
+
 </code></pre>
 
-    <h2>wheather a string is integer constant,floating point constant, character constant or Not a constant</h2>
+    <h2>smoothing filter</h2>
     <pre><code>
-%{
-#include <stdio.h>
-%}
+import cv2
+from matplotlib import pyplot as plt
 
-%%
-[-]?[0-9]+              { printf("Integer Constant\n"); }
+# image = cv2.imread('noisysaltpepper.png')
+# image = cv2.imread('gaussian_noise.png')
+image = cv2.imread('noisy_image2.jpg')
 
-[-]?[0-9]+"."[0-9]+     { printf("Floating Point Constant\n"); }
+# Apply mean filter (kernel size 3x3)
+mean_blur = cv2.blur(image, (3, 3))  # suitable for uniform noise
 
-\'[a-zA-Z0-9]\'         { printf("Character Constant\n"); }
+# Apply Gaussian smoothing
+gaussian_blur = cv2.GaussianBlur(image, (3, 3), 0)  # suitable for gaussian noise
 
-[ \t\n]                 ;   // ignore spaces
+# Apply median filter
+median_blur = cv2.medianBlur(image, 5)  # suitable for salt & pepper noise
 
-.                       { printf("Not a Constant\n"); }
-%%
+# Displaying results
+plt.figure(figsize=(10, 8))
 
-int main() {
-    printf("Enter a string:\n");
-    yylex();
-    return 0;
-}
+plt.subplot(2, 2, 1)
+plt.imshow(image)
+plt.title("Original")
+plt.axis('off')
+
+plt.subplot(2, 2, 2)
+plt.imshow(mean_blur)
+plt.title("Mean Filter")
+plt.axis('off')
+
+plt.subplot(2, 2, 3)
+plt.imshow(gaussian_blur)
+plt.title("Gaussian Filter")
+plt.axis('off')
+
+plt.subplot(2, 2, 4)
+plt.imshow(median_blur)
+plt.title("Median Filter")
+plt.axis('off')
+
+plt.tight_layout()
+plt.show()
 </code></pre>
-    <h2>Match the pattern</h2>
+    <h2>count objects</h2>
     <pre><code>
-%{
-#include <stdio.h>
-%}
+import cv2
+import numpy as np
 
-%%
-"abb"        { printf("Matched: abb\n"); }
+# 1. Load the image
+image_path = 'object.jpg'
+image = cv2.imread(image_path)
 
-a*b+         { printf("Matched: a*b+\n"); }
+# Check if image was loaded correctly
+if image is None:
+    print(f"Error: Could not load image at {image_path}. Check the file name and path.")
+else:
+    # 2. Pre-processing
+    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    
+    # Blur (important to reduce high-frequency noise)
+    blur = cv2.GaussianBlur(gray, (13, 13), 0)
+    
+    # 3. Adaptive threshold (handles uneven lighting)
+    thresh = cv2.adaptiveThreshold(
+        blur, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
+        cv2.THRESH_BINARY_INV, 11, 2
+    )
 
-a+           { printf("Matched: a+\n"); }
+    # 4. Morphological operations
+    kernel = np.ones((5, 5), np.uint8)
+    # Closing fills small holes inside the detected objects
+    closing = cv2.morphologyEx(thresh, cv2.MORPH_CLOSE, kernel, iterations=3)
+    # Opening removes small white noise outside the objects
+    opening = cv2.morphologyEx(closing, cv2.MORPH_OPEN, kernel, iterations=2)
 
-\n           return 0;
+    # 5. Find contours
+    contours, _ = cv2.findContours(opening, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
-.            { printf("Not Matched\n"); }
-%%
+    count = 0
+    for cnt in contours:
+        area = cv2.contourArea(cnt)
+        
+        # Filter by area to ignore tiny artifacts or noise
+        if area > 1500:
+            count += 1
+            cv2.drawContours(image, [cnt], -1, (0, 0, 255), 3)
 
-int main() {
-    printf("Enter string:\n");
-    yylex();
-    return 0;
-}
+    # 6. Output results
+    print(f"Number of Objects: {count}")
+
+    # Display the intermediate threshold and the final result
+    cv2.imshow("Threshold (Cleaned)", opening)
+    cv2.imshow("Result (Counted)", image)
+
+    # Wait for a key press and close windows
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
 </code></pre>
 
 </body>
