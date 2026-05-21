@@ -15,15 +15,15 @@ if image is None:
     raise FileNotFoundError("Could not find 'image1.jpg' in the project folder.")
 show_fit_window("original image", image, 2000)
 
-# converting into grayscale
+
 image_gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 show_fit_window("Gray image", image_gray, 2000)
 
-# converting into binary thresholding
+
 ret, thresh = cv2.threshold(image_gray, 150, 255, cv2.THRESH_BINARY)
 show_fit_window("Binary Image", thresh, 2000)
 
-# detecting contours
+
 contours, hierarchy = cv2.findContours(
     image=thresh,
     mode=cv2.RETR_TREE,
@@ -32,7 +32,7 @@ contours, hierarchy = cv2.findContours(
 
 image_copy = image.copy()
 
-# drawing contours
+
 cv2.drawContours(
     image=image_copy,
     contours=contours,
@@ -102,29 +102,29 @@ cdf_normalized = cdf * hist.max() / cdf.max()
         import cv2
 import matplotlib.pyplot as plt
 
-# Load image
+
 image = cv2.imread("rupee.jpg")
 
-# Convert to grayscale
+
 image_gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 
-# Apply Gaussian Blur
+
 image_blur = cv2.GaussianBlur(image_gray, (3, 3), 0)
 
-# Sobel Edge Detection
+
 sobelx = cv2.Sobel(src=image_blur, ddepth=cv2.CV_64F, dx=1, dy=0, ksize=5)
 sobely = cv2.Sobel(src=image_blur, ddepth=cv2.CV_64F, dx=0, dy=1, ksize=5)
 sobelxy = cv2.Sobel(src=image_blur, ddepth=cv2.CV_64F, dx=1, dy=1, ksize=5)
 
-# Convert results to absolute scale
+
 sobelx = cv2.convertScaleAbs(sobelx)
 sobely = cv2.convertScaleAbs(sobely)
 sobelxy = cv2.convertScaleAbs(sobelxy)
 
-# Convert original image to RGB for matplotlib
+
 image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
 
-# Plot results
+
 plt.figure(figsize=(15, 8))
 
 plt.subplot(1, 4, 1)
@@ -157,43 +157,43 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 def detect_yellow(image_path):
-    # load the image
+
     img = cv2.imread(image_path)
 
-    # convert to HSV
+
     hsv_img = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
 
-    # define yellow range
+
     yellow_lower = np.array([20, 100, 100])
     yellow_upper = np.array([30, 255, 255])
 
-    # create mask to isolate yellow color
+
     mask = cv2.inRange(hsv_img, yellow_lower, yellow_upper)
 
-    # find contours
+
     contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
 
     output_img = img.copy()
 
-    # draw bounding boxes
+
     for contour in contours:
         x, y, w, h = cv2.boundingRect(contour)
         if cv2.contourArea(contour) > 500:
             cv2.rectangle(output_img, (x, y), (x + w, y + h), (0, 255, 0), 3)
 
-    # convert to RGB for display
+
     output_img_rgb = cv2.cvtColor(output_img, cv2.COLOR_BGR2RGB)
 
-    # display
+
     plt.figure(figsize=(12, 6))
 
-    # original image
+
     plt.subplot(1, 2, 1)
     plt.imshow(cv2.cvtColor(img, cv2.COLOR_BGR2RGB))
     plt.title("Original Image")
     plt.axis("off")
 
-    # processed image
+
     plt.subplot(1, 2, 2)
     plt.imshow(output_img_rgb)
     plt.title("Yellow Color Detection")
@@ -204,7 +204,7 @@ def detect_yellow(image_path):
     return output_img
 
 
-# run function
+
 image_path = "flower.jpg"
 output_image = detect_yellow(image_path)
 
@@ -230,29 +230,29 @@ while True:
 
     h_img, w_img = frame.shape[:2]
 
-    # Predict
+
     particles += np.random.randn(N,2) * 15
 
-    # Keep particles inside frame
+
     particles[:,0] = np.clip(particles[:,0], 0, w_img-1)
     particles[:,1] = np.clip(particles[:,1], 0, h_img-1)
 
-    # Measurement (vectorized)
+
     coords = particles.astype(int)
     colors = frame[coords[:,1], coords[:,0]]
     dist = np.linalg.norm(colors - ref_color, axis=1)
     weights = 1 / (dist + 1)  
     weights /= weights.sum()
 
-    #estimate
+
     pos = np.average(particles, weights=weights, axis=0).astype(int)
 
-    # Resample
+
     idx = np.random.choice(N, N, p=weights)
     particles = particles[idx]
     weights.fill(1.0 / N)
 
-    # Draw
+
     for p in particles:
       cv2.circle(frame, tuple(p.astype(int)), 1, (0,255,0), -1)
     cv2.circle(frame, tuple(pos), 8, (0,0,255), -1)
@@ -271,28 +271,28 @@ import mediapipe as mp
 from mediapipe.tasks.python import vision
 from mediapipe.tasks.python.core.base_options import BaseOptions
 
-# Load the hand landmark model (download required)
+
 model_path = "hand_landmarker.task"
 
-# Initialize HandLandmarker
+
 options = vision.HandLandmarkerOptions(
     base_options=BaseOptions(model_asset_path=model_path),
     num_hands=2
 )
 hand_landmarker = vision.HandLandmarker.create_from_options(options)
 
-# Gesture recognition function
+
 def recognize_number(hand_landmarks):
     fingers = []
-    # Landmark shortcuts
+
     lm = hand_landmarks
-    # ---- Thumb (special case: compare x instead of y) ----
+
     if lm[4].x < lm[3].x:
         fingers.append(1)
     else:
         fingers.append(0)
 
-    # ---- Other 4 fingers ----
+
     tips = [8, 12, 16, 20]
     for tip in tips:
         if lm[tip].y < lm[tip - 2].y:
@@ -302,7 +302,7 @@ def recognize_number(hand_landmarks):
             
     total_fingers = sum(fingers)
 
-    # ---- Map to numbers ----
+
     if fingers == [0,0,0,0,0]:
         return "0"
     elif fingers == [0,1,0,0,0]:
@@ -326,7 +326,7 @@ def recognize_number(hand_landmarks):
     else:
         return str(total_fingers)
 
-# Start webcam
+
 cap = cv2.VideoCapture(0)
 
 while True:
@@ -335,26 +335,26 @@ while True:
     if not ret:
         break
 
-    # Convert frame to RGB
+
     rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
 
-    # Convert to MediaPipe Image
+
     mp_image = mp.Image(image_format=mp.ImageFormat.SRGB, data=rgb_frame)
 
-    # Detect hands
+
     result = hand_landmarker.detect(mp_image)
 
     if result.hand_landmarks:
         for hand_landmarks in result.hand_landmarks:
             gesture = recognize_number(hand_landmarks)
 
-            # Draw landmarks manually
+
             for lm in hand_landmarks:
                 h, w, _ = frame.shape
                 cx, cy = int(lm.x * w), int(lm.y * h)
                 cv2.circle(frame, (cx, cy), 5, (0, 255, 0), -1)
 
-            # Get position of wrist (landmark 0)
+
             h, w, _ = frame.shape
             x = int(hand_landmarks[0].x * w)
             y = int(hand_landmarks[0].y * h)
@@ -378,44 +378,23 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 import numpy as np
 
-# creating figure size
+
 fig = plt.figure(figsize=(10, 8))
 
-# generating a 3D sine wave
+
 ax = plt.axes(projection='3d')
 
-# creating axes
-axes = [5, 5, 5]
-
-# create data
-data = np.ones(axes)
-
-# control transparency
-alpha = 0.9
-
-# Control colour
-# colors = np.empty(axes + [4])
-
-# colors[0] = [1, 0, 0, alpha]  # red
-# colors[1] = [0, 1, 0, alpha]  # green
-# colors[2] = [0, 0, 1, alpha]  # blue
-# colors[3] = [1, 1, 0, alpha]  # yellow
-# colors[4] = [1, 1, 1, alpha]  # grey
-
-# Creating array points using numpy
 x = np.arange(0, 20, 0.1)
 y = np.sin(x)
 z = y * np.sin(x)
 c = x + y
 
-# To create a scatter graph
+
 ax.scatter(x, y, z, c=c)
 
-# turn off/on axis
+
 plt.axis('off')
 
-# Voxels example (commented)
-# ax.voxels(data, facecolors=colors, edgecolors='grey')
 
 plt.show()
 
@@ -426,20 +405,15 @@ plt.show()
 import cv2
 from matplotlib import pyplot as plt
 
-# image = cv2.imread('noisysaltpepper.png')
-# image = cv2.imread('gaussian_noise.png')
+
 image = cv2.imread('noisy_image2.jpg')
 
-# Apply mean filter (kernel size 3x3)
 mean_blur = cv2.blur(image, (3, 3))  # suitable for uniform noise
 
-# Apply Gaussian smoothing
 gaussian_blur = cv2.GaussianBlur(image, (3, 3), 0)  # suitable for gaussian noise
 
-# Apply median filter
 median_blur = cv2.medianBlur(image, 5)  # suitable for salt & pepper noise
 
-# Displaying results
 plt.figure(figsize=(10, 8))
 
 plt.subplot(2, 2, 1)
@@ -470,53 +444,51 @@ plt.show()
 import cv2
 import numpy as np
 
-# 1. Load the image
 image_path = 'object.jpg'
 image = cv2.imread(image_path)
 
-# Check if image was loaded correctly
 if image is None:
     print(f"Error: Could not load image at {image_path}. Check the file name and path.")
 else:
-    # 2. Pre-processing
+
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     
-    # Blur (important to reduce high-frequency noise)
+
     blur = cv2.GaussianBlur(gray, (13, 13), 0)
     
-    # 3. Adaptive threshold (handles uneven lighting)
+
     thresh = cv2.adaptiveThreshold(
         blur, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
         cv2.THRESH_BINARY_INV, 11, 2
     )
 
-    # 4. Morphological operations
+
     kernel = np.ones((5, 5), np.uint8)
-    # Closing fills small holes inside the detected objects
+
     closing = cv2.morphologyEx(thresh, cv2.MORPH_CLOSE, kernel, iterations=3)
-    # Opening removes small white noise outside the objects
+
     opening = cv2.morphologyEx(closing, cv2.MORPH_OPEN, kernel, iterations=2)
 
-    # 5. Find contours
+
     contours, _ = cv2.findContours(opening, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
     count = 0
     for cnt in contours:
         area = cv2.contourArea(cnt)
         
-        # Filter by area to ignore tiny artifacts or noise
+
         if area > 1500:
             count += 1
             cv2.drawContours(image, [cnt], -1, (0, 0, 255), 3)
 
-    # 6. Output results
+
     print(f"Number of Objects: {count}")
 
-    # Display the intermediate threshold and the final result
+
     cv2.imshow("Threshold (Cleaned)", opening)
     cv2.imshow("Result (Counted)", image)
 
-    # Wait for a key press and close windows
+
     cv2.waitKey(0)
     cv2.destroyAllWindows()
 </code></pre>
